@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Button,
     SafeAreaView,
     StyleSheet,
-    Text,
-    View,
+
 } from 'react-native';
-import Animated, { cancelAnimation, Easing, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import Svg, {Circle, Defs, ClipPath} from 'react-native-svg';
+import Animated, { Easing, Extrapolate, interpolate, useAnimatedProps, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Svg, {Circle, Defs, ClipPath, G} from 'react-native-svg';
 
 const styles = StyleSheet.create({
     screen: {
@@ -19,50 +18,64 @@ const styles = StyleSheet.create({
 });
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedG = Animated.createAnimatedComponent(G);
 
+const GREEN_COLOR = "rgb(66, 221, 240)";
+const RED_COLOR = "rgb(240, 50, 75)";
+const BACKGROUND_COLOR = "rgb(10, 10, 10)";
+
+const VIEWBOX_HEIGHT = 100;
+const VIEWBOX_WIDTH = 100;
 const BASE_DIAMETER = 50;
-
-const radius_input_range = [0, 0.5, 1];
-const radius_output_range = [BASE_DIAMETER, BASE_DIAMETER * 0.6, BASE_DIAMETER];
-
-const radius_input_range_bigger = [0, 0.5, 1];
-const radius_output_range_bigger = [BASE_DIAMETER, BASE_DIAMETER * 1.2, BASE_DIAMETER];
+const BASE_RADIUS = BASE_DIAMETER / 2;
 
 const TikTokAnimationScreen = ({ navigation }) => {
 
     const animatedValue = useSharedValue(0.0);
 
-    const greenCircleProps = useAnimatedProps(() => {        
-        const cx = interpolate(animatedValue.value, [0, 1], [75, 25]); // from right to left
-        const d = interpolate(animatedValue.value, radius_input_range, radius_output_range);
+    // Group 1 is only visible in the first half of the animation cycle
+    const group1Props = useAnimatedProps(() => {
+        return {
+            opacity: interpolate(animatedValue.value, [0, 1, 1, 2], [1, 1, 0, 0])
+        };
+    });
+
+    const group1RightToLeftCircleProps = useAnimatedProps(() => {
+        // position from right to left
+        const cx = interpolate(animatedValue.value, [0, 1], [VIEWBOX_WIDTH - BASE_RADIUS, BASE_RADIUS], Extrapolate.CLAMP);
+        const d = interpolate(animatedValue.value, [0, 0.5, 1], [BASE_DIAMETER, BASE_DIAMETER * 0.6, BASE_DIAMETER], Extrapolate.CLAMP);
         return {
             cx: cx,
             r: d / 2,
         };
     });
 
-    const redCircleProps = useAnimatedProps(() => {
-        const cx = interpolate(animatedValue.value, [0, 1], [25, 75]); // from left to right
-        const d = interpolate(animatedValue.value, radius_input_range_bigger, radius_output_range_bigger);
+    const group1LeftToRightCircleProps = useAnimatedProps(() => {
+        // position from left to right
+        const cx = interpolate(animatedValue.value, [0, 1], [BASE_RADIUS, VIEWBOX_WIDTH - BASE_RADIUS], Extrapolate.CLAMP);
+        // increase diameter
+        const d = interpolate(animatedValue.value, [0, 0.5, 1], [BASE_DIAMETER, BASE_DIAMETER * 1.2, BASE_DIAMETER], Extrapolate.CLAMP);
         return {
             cx: cx,
             r: d / 2,
         };
     });
 
-    const backgroundProps = useAnimatedProps(() => {
-        const cx = interpolate(animatedValue.value, [0, 1], [25, 75]); // from left to right
-        const d = interpolate(animatedValue.value, radius_input_range_bigger, radius_output_range_bigger);
+    const group1LeftToRightBackgroundCircleProps = useAnimatedProps(() => {
+        // position from left to right
+        const cx = interpolate(animatedValue.value, [0, 1], [BASE_RADIUS, VIEWBOX_WIDTH - BASE_RADIUS], Extrapolate.CLAMP);
+        // increase diameter
+        const d = interpolate(animatedValue.value, [0, 0.5, 1], [BASE_DIAMETER, BASE_DIAMETER * 1.2, BASE_DIAMETER], Extrapolate.CLAMP);
         return {
             cx: cx,
             r: d / 2,
         };
     });
 
-    const clipPathProps = useAnimatedProps(() => {
-        const cx = interpolate(animatedValue.value, [0, 1], [75, 25]); // from right to left
-        const d = interpolate(animatedValue.value, radius_input_range, radius_output_range);
-        
+    const group1ClipPathProps = useAnimatedProps(() => {
+        // position from right to left
+        const cx = interpolate(animatedValue.value, [0, 1], [VIEWBOX_WIDTH - BASE_RADIUS, BASE_RADIUS], Extrapolate.CLAMP);
+        const d = interpolate(animatedValue.value, [0, 0.5, 1], [BASE_DIAMETER, BASE_DIAMETER * 0.6, BASE_DIAMETER], Extrapolate.CLAMP);
         return {
             cx: cx,
             r: d / 2,
@@ -70,37 +83,102 @@ const TikTokAnimationScreen = ({ navigation }) => {
     });
 
 
+    // Group 2 is only visible in the second half of the animation cycle
+    const group2Props = useAnimatedProps(() => {
+        const opacity = interpolate(animatedValue.value, [0, 1, 1, 2], [0, 0, 1, 1]);
+        return {
+            opacity: opacity,
+        };
+    });
+
+    const group2LeftToRightCircleProps = useAnimatedProps(() => {
+        // position from left to right
+        const cx = interpolate(animatedValue.value, [1, 2], [BASE_RADIUS, VIEWBOX_WIDTH - BASE_RADIUS], Extrapolate.CLAMP);
+        // increase diameter
+        const d = interpolate(animatedValue.value, [1, 1.5, 2], [BASE_DIAMETER, BASE_DIAMETER * 1.2, BASE_DIAMETER], Extrapolate.CLAMP);
+        return {
+            cx: cx,
+            r: d / 2,
+        };
+    });
+
+    const group2RightToLeftCircleProps = useAnimatedProps(() => {
+        // position from right to left
+        const cx = interpolate(animatedValue.value, [1, 2], [VIEWBOX_WIDTH - BASE_RADIUS, BASE_RADIUS], Extrapolate.CLAMP);
+        const d = interpolate(animatedValue.value, [1, 1.5, 2], [BASE_DIAMETER, BASE_DIAMETER * 0.6, BASE_DIAMETER], Extrapolate.CLAMP);
+        return {
+            cx: cx,
+            r: d / 2,
+        };
+    });
+
+    const group2LeftToRightBackgroundCircleProps = useAnimatedProps(() => {
+        // position from left to right
+        const cx = interpolate(animatedValue.value, [1, 2], [BASE_RADIUS, VIEWBOX_WIDTH - BASE_RADIUS], Extrapolate.CLAMP);
+        const d = interpolate(animatedValue.value, [1, 1.5, 2], [BASE_DIAMETER, BASE_DIAMETER * 1.2, BASE_DIAMETER], Extrapolate.CLAMP);
+        return {
+            cx: cx,
+            r: d / 2,
+        };
+    });
+
+    const group2ClipPathProps = useAnimatedProps(() => {
+        // position from right to left
+        const cx = interpolate(animatedValue.value, [1, 2], [VIEWBOX_WIDTH - BASE_RADIUS, BASE_RADIUS], Extrapolate.CLAMP);
+        const d = interpolate(animatedValue.value, [1, 1.5, 2], [BASE_DIAMETER, BASE_DIAMETER * 0.6, BASE_DIAMETER], Extrapolate.CLAMP);
+        return {
+            cx: cx,
+            r: d / 2,
+        };
+    });
 
 
 
     return (
         <SafeAreaView style={styles.screen}>
             
-            <Svg height="100" width="100" viewBox="0 0 100 100">
-            { 
+            <Svg height="50" width="50" viewBox="0 0 100 100">
                 <Defs>
-                    <ClipPath id="background-clippath">
-                        
-                        <AnimatedCircle animatedProps={clipPathProps} cy="50" r="25" />
+                    <ClipPath id="group1-background-clippath">
+                        <AnimatedCircle animatedProps={group1ClipPathProps} cy="50" />
+                    </ClipPath>
+
+                    <ClipPath id="group2-background-clippath">
+                        <AnimatedCircle animatedProps={group2ClipPathProps} cy="50" />
                     </ClipPath>
                 </Defs>
-              }
-                { /* left circle */ }
-                <AnimatedCircle animatedProps={redCircleProps} cy="50" fill="rgb(240, 50, 75)" />
 
-                { /* right circle */ }
-                <AnimatedCircle animatedProps={greenCircleProps} cy="50" fill="rgb(66, 221, 240)" />
 
-                { /* left circle with background color */ }
-                <AnimatedCircle animatedProps={backgroundProps} cy="50" fill="rgb(10, 10, 10)" clipPath="url(#background-clippath)" />
-                    
-            
+                <AnimatedG animatedProps={group1Props}>
+                    { /* left circle */ }
+                    <AnimatedCircle animatedProps={group1LeftToRightCircleProps} cy="50" fill={RED_COLOR} />
+
+                    { /* right circle */ }
+                    <AnimatedCircle animatedProps={group1RightToLeftCircleProps} cy="50" fill={GREEN_COLOR} />
+
+                    { /* left circle with background color */ }
+                    <AnimatedCircle animatedProps={group1LeftToRightBackgroundCircleProps} cy="50" fill={BACKGROUND_COLOR} clipPath="url(#group1-background-clippath)" />
+                </AnimatedG>
+
+
+                <AnimatedG animatedProps={group2Props}>
+                
+                    { /* second part of animation. left circle. from left right */ }
+                    <AnimatedCircle animatedProps={group2LeftToRightCircleProps} cy="50" fill={GREEN_COLOR} />
+
+                    { /* second part of animation. right circle. from right to left */ }
+                    <AnimatedCircle animatedProps={group2RightToLeftCircleProps} cy="50" fill={RED_COLOR} />
+                
+                    { /* left circle with background color */ }
+                    <AnimatedCircle animatedProps={group2LeftToRightBackgroundCircleProps} cy="50" fill={BACKGROUND_COLOR} clipPath="url(#group2-background-clippath)" />
+
+                </AnimatedG>
 
             </Svg>
 
             <Button title="Start animation" onPress={() => {
                 animatedValue.value = 0;
-                animatedValue.value =  withRepeat(withTiming(1, { duration: 400 }), -1, true);
+                animatedValue.value =  withRepeat(withTiming(2, { duration: 1000, easing: Easing.linear }), -1, false);
             }}></Button>
 
 
